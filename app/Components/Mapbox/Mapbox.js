@@ -1,20 +1,17 @@
-  import dynamic from 'next/dynamic';
+"use client";
+import React, { useEffect, useState } from "react";
+import { MapContainer, TileLayer, useMap } from "react-leaflet";
+import "leaflet/dist/leaflet.css";
+import { useGlobalContext } from "@/app/context/globalContext";
 
 function FlyToActiveCity({ activeCityCords }) {
   const map = useMap();
 
   useEffect(() => {
-    if (activeCityCords) {
-      const zoomLev = 13;
-      const flyToOptions = {
+    if (activeCityCords && map) {
+      map.flyTo([activeCityCords.lat, activeCityCords.lon], 13, {
         duration: 1.5,
-      };
-
-      map.flyTo(
-        [activeCityCords.lat, activeCityCords.lon],
-        zoomLev,
-        flyToOptions
-      );
+      });
     }
   }, [activeCityCords, map]);
 
@@ -22,14 +19,56 @@ function FlyToActiveCity({ activeCityCords }) {
 }
 
 function Mapbox() {
-  const { forecast } = useGlobalContext(); // Your coordinates
+  const { forecast } = useGlobalContext();
+  const [userLocation, setUserLocation] = useState(null);
+  const [locationError, setLocationError] = useState(false);
 
-  const activeCityCords = forecast?.coord;
+  useEffect(() => {
+    if ("geolocation" in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setUserLocation({
+            lat: position.coords.latitude,
+            lon: position.coords.longitude,
+          });
+        },
+        (error) => {
+          console.error("Error fetching location:", error);
+          setLocationError(true);
+        }
+      );
+    } else {
+      setLocationError(true);
+    }
+  }, []);
 
-  if (!forecast || !forecast.coord || !activeCityCords) {
+  const activeCityCords = forecast?.coord || userLocation;
+
+  if (!activeCityCords) {
     return (
-      <div>
-        <h1>Loading</h1>
+      <div className="flex items-center justify-center h-full">
+        <h1>{locationError ? "Location Access Denied" : "Loading..."}</h1>
       </div>
     );
   }
+
+  return (
+    <div className="flex-1 basis-[50%] border rounded-lg">
+      <MapContainer
+        center={[activeCityCords.lat, activeCityCords.lon]}
+        zoom={13}
+        scrollWheelZoom={false}
+        className="rounded-lg m-4"
+        style={{ height: "400px", width: "100%" }}
+      >
+        <TileLayer
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        />
+        <FlyToActiveCity activeCityCords={activeCityCords} />
+      </MapContainer>
+    </div>
+  );
+}
+
+export default Mapbox;
