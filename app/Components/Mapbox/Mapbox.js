@@ -1,4 +1,5 @@
-"use client";
+"use client"; // Ensures this component runs only on the client
+
 import React, { useEffect, useState } from "react";
 import { MapContainer, TileLayer, useMap } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
@@ -24,7 +25,7 @@ function Mapbox() {
   const [locationError, setLocationError] = useState(false);
 
   useEffect(() => {
-    if ("geolocation" in navigator) {
+    if (typeof window !== "undefined" && "geolocation" in navigator) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
           setUserLocation({

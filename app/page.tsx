@@ -1,10 +1,10 @@
 "use client";
+import dynamic from "next/dynamic";
 import Image from "next/image";
 import AirPollution from "./Components/AirPollution/AirPollution";
 import DailyForecast from "./Components/DailyForecast/DailyForecast";
 import FeelsLike from "./Components/FeelsLike/FeelsLike";
 import Humidity from "./Components/Humidity/Humidity";
-import Mapbox from "./Components/Mapbox/Mapbox";
 import Navbar from "./Components/Navbar";
 import Population from "./Components/Population/Population";
 import Pressure from "./Components/Pressure/Pressure";
@@ -17,16 +17,25 @@ import defaultStates from "./utils/defaultStates";
 import FiveDayForecast from "./Components/FiveDayForecast/FiveDayForecast";
 import { useGlobalContextUpdate } from "./context/globalContext";
 
+// Dynamically import Mapbox to prevent SSR errors
+const Mapbox = dynamic(() => import("./Components/Mapbox/Mapbox"), {
+  ssr: false,
+});
+
 export default function Home() {
-  const { setActiveCityCoords } = useGlobalContextUpdate();
+  const { setActiveCityCoords } = useGlobalContextUpdate() || {};
 
   const getClickedCityCords = (lat: number, lon: number) => {
+    if (!setActiveCityCoords) return;
+
     setActiveCityCoords([lat, lon]);
 
-    window.scrollTo({
-      top: 0,
-      behavior: "smooth",
-    });
+    if (typeof window !== "undefined") {
+      window.scrollTo({
+        top: 0,
+        behavior: "smooth",
+      });
+    }
   };
 
   return (
@@ -57,19 +66,15 @@ export default function Home() {
                 Top Large Cities
               </h2>
               <div className="flex flex-col gap-4">
-                {defaultStates.map((state, index) => {
-                  return (
-                    <div
-                      key={index}
-                      className="border rounded-lg cursor-pointer dark:bg-dark-grey shadow-sm dark:shadow-none"
-                      onClick={() => {
-                        getClickedCityCords(state.lat, state.lon);
-                      }}
-                    >
-                      <p className="px-6 py-4">{state.name}</p>
-                    </div>
-                  );
-                })}
+                {defaultStates.map((state, index) => (
+                  <div
+                    key={index}
+                    className="border rounded-lg cursor-pointer dark:bg-dark-grey shadow-sm dark:shadow-none"
+                    onClick={() => getClickedCityCords(state.lat, state.lon)}
+                  >
+                    <p className="px-6 py-4">{state.name}</p>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
@@ -78,12 +83,11 @@ export default function Home() {
 
       <footer className="py-4 flex justify-center pb-8">
         <p className="footer-text text-sm flex items-center gap-1">
-          Made by
-          <span className="animate-pulse">💻</span> with ❤️ and ☕️ by
+          Made by <span className="animate-pulse">💻</span> with ❤️ and ☕️ by
           <a
             href="https://github.com/deva016"
             target="_blank"
-            className=" text-green-300 font-bold"
+            className="text-green-300 font-bold"
           >
             Deveshwar
           </a>
